@@ -1,0 +1,83 @@
+---
+- name: Create LXD Container
+  connection: local
+  become: false
+  lxd_container:
+    name: "{{item}}"
+    state: started
+    source:
+      type: image
+      mode: pull
+      server: https://cloud-images.ubuntu.com/releases
+      protocol: simplestreams
+      alias: 16.04/amd64
+    profiles: ['default']
+    config: "{\"security.nesting\": \"true\", \"linux.kernel_modules\": \"overlay,nf_nat\"}"
+    wait_for_ipv4_addresses: true
+    timeout: 600
+  with_items:
+    - "{{groups['containers']}}"
+
+
+- name: Check if Python2 is installed in container
+  delegate_to: "{{item}}"
+  raw: dpkg -s python
+  register: python_check_is_installed
+  failed_when: python_check_is_installed.rc not in [0,1]
+  changed_when: false
+  with_items:
+    - "{{groups['containers']}}"
+
+- name: Install Python2 in container
+  delegate_to: "{{item.item}}"
+  raw: apt-get update && apt-get install -y python
+  when: "{{item.rc == 1}}"
+  with_items:
+    - "{{python_check_is_installed.results}}"
+
+- name: Ensure openssh-server is installed
+  package:
+    name: openssh-server
+    state: present
+  delegate_to: "{{item}}"
+  with_items:
+    - "{{groups['containers']}}"
+
+- name: Make sure we have a 'managers' group
+  group:
+    name: managers
+    state: present
+  delegate_to: "{{item}}"
+  with_items:
+    - "{{groups['containers']}}"
+
+- name: Allow 'managers' group to have passwordless sudo
+  lineinfile:
+    dest: /etc/sudoers
+    state: present
+    regexp: '^%managers'
+    line: '%managers ALL=(ALL) NOPASSWD: ALL'
+  delegate_to: "{{item}}"
+  with_items:
+    - "{{groups['containers']}}"
+
+
+- name: Ensure manager user is configured
+  delegate_to: "{{item}}"
+  user:
+    name: manager
+    comment: "Manager User"
+    groups: managers
+    shell: /bin/bash
+  with_items:
+    - "{{groups['containers']}}"
+
+- name: Setup authorized_key for manager user
+  delegate_to: "{{item}}"
+  authorized_key:
+    user: manager
+    state: present
+    key: "{{ lookup('file', lookup('env','HOME') + '/.ssh/id_rsa.pub') }}"
+  with_items:
+    - "{{groups['containers']}}"
+

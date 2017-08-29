@@ -1,0 +1,36 @@
+---
+- hosts: docker-nodes
+  remote_user: manager
+  become: yes
+  tasks:
+    - name: Docker CE Install prerequisite
+      apt:
+        name: "{{item}}"
+        state: present
+      with_items:
+        - apt-transport-https
+        - ca-certificates
+        -  curl
+        - software-properties-common
+
+    - name: Docker’s official GPG APT key
+      apt_key:
+        url: "https://download.docker.com/linux/ubuntu/gpg"
+        state: present
+    
+    - name: Docker Stable APT Repository
+      apt_repository:
+        repo: deb [arch=amd64] https://download.docker.com/linux/ubuntu {{ansible_distribution_release}} stable
+        state: present
+
+    - name: Docker CE package
+      apt:
+        name: docker-ce
+        state: present
+        update_cache: yes
+    - name: Adding existing user 'manager' to group docker
+      user:
+        name: manager
+        groups: docker
+        append: yes
+

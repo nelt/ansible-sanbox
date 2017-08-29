@@ -1,0 +1,12 @@
+[local]
+localhost
+
+[containers]
+dk01 ansible_connection=lxd
+dk02 ansible_connection=lxd
+dk03 ansible_connection=lxd
+
+manager1 ansible_connection=lxd
+worker1 ansible_connection=lxd
+worker2 ansible_connection=lxd
+

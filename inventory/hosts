@@ -1,0 +1,9 @@
+[docker-nodes]
+10.43.98.89 ansible_connection=ssh ansible_user=manager 
+#dk02 
+#dk03
+
+manager1 ansible_connection=ssh ansible_user=manager
+worker1 ansible_connection=ssh ansible_user=manager
+worker2 ansible_connection=ssh ansible_user=manager
+
