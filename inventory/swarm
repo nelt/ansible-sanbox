@@ -1,0 +1,14 @@
+[docker-nodes]
+dk01 ansible_connection=ssh ansible_user=manager
+dk02 ansible_connection=ssh ansible_user=manager
+dk03 ansible_connection=ssh ansible_user=manager
+dk04 ansible_connection=ssh ansible_user=manager
+
+[managers]
+dk01
+dk02
+
+[workers]
+dk03
+dk04
+

@@ -1,0 +1,34 @@
+---
+- hosts: managers
+  tasks:
+    - name: register swarm status
+      shell: docker info --format '{{'{{'}}json .Swarm.LocalNodeState{{'}}'}}' | sed -e 's/^"//' -e 's/"$//'
+      register: swarm_status
+    - name: show managers initial status
+      debug:
+        msg: "swarm status for {{ inventory_hostname }} is {{ swarm_status.stdout }}"
+    - name: build ready_managers group
+      add_host:
+        hostname: "{{ item }}"
+        groups: ready_managers
+      with_items: "{{ play_hosts }}"
+      when: "swarm_status.stdout == 'active'"
+    - name: build to_be_initialized_managers
+      add_host:
+        hostname: "{{ item }}"
+        groups: to_be_initialized_managers
+      with_items: "{{ play_hosts }}"
+      when: "swarm_status.stdout == 'inactive'"
+
+- hosts: ready_managers
+  tasks:
+    - name: show ready managers
+      debug: 
+        msg: "{{ inventory_hostname }} is a running manager"
+
+- hosts: to_be_initialized_managers
+  tasks:
+    - name: show to be initialized managers
+      debug:
+        msg: "{{ inventory_hostname }} manager needs to be initialized"
+
