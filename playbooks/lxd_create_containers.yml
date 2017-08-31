@@ -1,5 +1,0 @@
-- hosts: localhost
-  connection: local
-  roles:
-    - create_lxd_containers
-    - add_containers_hosts_line
