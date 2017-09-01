@@ -5,8 +5,6 @@
       shell: docker info --format '{{'{{'}}json .Swarm.LocalNodeState{{'}}'}}' | sed -e 's/^"//' -e 's/"$//'
       register: swarm_status
 
-
-
 - hosts: managers
   tasks:
     - name: show managers initial status
@@ -50,12 +48,12 @@
       when: "'ready_managers' not in groups"
 
 
-
 - hosts: bootstrap
   tasks:
     - name: show bootstrap node
       debug:
-        msg: "swarm needs to be bootstrapped on host {{ inventory_hostname }}"
+        msg: "swarm needs to be bootstrapped on host {{ inventory_hostname }} with IP {{ ansible_default_ipv4.address }}"
+
 
 - hosts: to_be_initialized_managers
   tasks:
