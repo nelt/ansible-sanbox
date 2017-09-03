@@ -53,30 +53,63 @@
     - name: show bootstrap node
       debug:
         msg: "swarm needs to be bootstrapped on host {{ inventory_hostname }} with IP {{ ansible_default_ipv4.address }}"
-
-
 - hosts: to_be_initialized_managers
   tasks:
     - name: show to be initialized managers
       debug:
         msg: "{{ inventory_hostname }} manager needs to be initialized"
-
 - hosts: to_be_initialized_workers
   tasks:
     - name: show to be initialized workers
       debug:
         msg: "{{ inventory_hostname }} worker needs to be initialized"
-
-
 - hosts: ready_managers
   tasks:
     - name: show ready managers
       debug: 
         msg: "{{ inventory_hostname }} is a running manager"
-
 - hosts: ready_workers
   tasks:
     - name: show ready workers
       debug:
         msg: "{{ inventory_hostname }} is a running worker"
+
+
+
+- hosts: to_be_initialized_managers
+  tasks:
+    - name: bootstrap the swarm on the first manager
+      shell: "docker swarm init --advertise-addr {{ ansible_default_ipv4.address }}:2377"
+      when: "'bootstrap' in group_names" 
+    - name: set boostrapped manager as ready_manager
+      add_host:
+        hostname: "{{ inventory_hostname }}"
+        groups: ready_managers
+      when: "'bootstrap' in group_names"
+
+- hosts: ready_managers[0]
+  tasks:
+    - name: retrieve join-token for managers
+      shell: docker swarm join-token -q manager
+      register: manager_token
+    - name: retrieve join-token for workers
+      shell: docker swarm join-token -q worker
+      register: worker_token
+
+
+- hosts: to_be_initialized_managers
+  vars:
+    token: "{{ hostvars[groups['ready_managers'][0]]['manager_token']['stdout'] }}"
+  tasks:
+    - name: join a manager to the swarm
+      shell: "docker swarm join --token {{ token }} --advertise-addr {{ ansible_default_ipv4.address }}:2377 {{ groups['ready_managers'][0] }}:2377"
+      when: "'bootstrap' not in group_names"
+
+- hosts: to_be_initialized_workers
+  vars:
+    token: "{{ hostvars[groups['ready_managers'][0]]['worker_token']['stdout'] }}"
+  tasks:
+    - name: join new worker
+      shell: "docker swarm join --token {{ token }} --advertise-addr {{ ansible_default_ipv4.address }}:2377 {{ hostvars[groups['ready_managers'][0]]['ansible_eth0']['ipv4']['address'] }}:2377"
+
 
